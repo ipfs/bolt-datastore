@@ -47,7 +47,7 @@ func (bd *BoltDatastore) Delete(key ds.Key) error {
 	})
 }
 
-func (bd *BoltDatastore) Get(key ds.Key) (interface{}, error) {
+func (bd *BoltDatastore) Get(key ds.Key) ([]byte, error) {
 	var out []byte
 	err := bd.db.View(func(tx *bolt.Tx) error {
 		mmval := tx.Bucket(bd.bucketName).Get(key.Bytes())
@@ -79,19 +79,24 @@ func (bd *BoltDatastore) Has(key ds.Key) (bool, error) {
 	var found bool
 	err := bd.db.View(func(tx *bolt.Tx) error {
 		val := tx.Bucket(bd.bucketName).Get(key.Bytes())
-		found = (val != nil)
+		found = val != nil
 		return nil
 	})
 	return found, err
 }
 
-func (bd *BoltDatastore) Put(key ds.Key, val interface{}) error {
-	bval, ok := val.([]byte)
-	if !ok {
-		return ds.ErrInvalidType
-	}
+func (bd *BoltDatastore) GetSize(key ds.Key) (size int, err error) {
+	err = bd.db.View(func(tx *bolt.Tx) error {
+		val := tx.Bucket(bd.bucketName).Get(key.Bytes())
+		size = len(val)
+		return nil
+	})
+	return size, err
+}
+
+func (bd *BoltDatastore) Put(key ds.Key, val []byte) error {
 	return bd.db.Update(func(tx *bolt.Tx) error {
-		return tx.Bucket(bd.bucketName).Put(key.Bytes(), bval)
+		return tx.Bucket(bd.bucketName).Put(key.Bytes(), val)
 	})
 }
 
@@ -196,13 +201,8 @@ func (bb *boltBatch) Delete(k ds.Key) error {
 	return bb.bkt.Delete(k.Bytes())
 }
 
-func (bb *boltBatch) Put(k ds.Key, val interface{}) error {
-	bval, ok := val.([]byte)
-	if !ok {
-		return ds.ErrInvalidType
-	}
-
-	return bb.bkt.Put(k.Bytes(), bval)
+func (bb *boltBatch) Put(k ds.Key, val []byte) error {
+	return bb.bkt.Put(k.Bytes(), val)
 }
 
 var _ ds.Batching = (*BoltDatastore)(nil)
