@@ -15,11 +15,12 @@ type BoltDatastore struct {
 	Path       string
 }
 
-func NewBoltDatastore(path, bucket string) (*BoltDatastore, error) {
+func NewBoltDatastore(path, bucket string, noSync bool) (*BoltDatastore, error) {
 	db, err := bolt.Open(path+"/bolt.db", 0600, nil)
 	if err != nil {
 		return nil, err
 	}
+	db.NoSync = noSync
 
 	// TODO: need to do db.Close() sometime...
 	err = db.Update(func(tx *bolt.Tx) error {
