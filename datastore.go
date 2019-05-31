@@ -1,6 +1,8 @@
 package boltds
 
 import (
+	"bytes"
+
 	bolt "github.com/boltdb/bolt"
 	ds "github.com/ipfs/go-datastore"
 	query "github.com/ipfs/go-datastore/query"
@@ -15,8 +17,14 @@ type BoltDatastore struct {
 	Path       string
 }
 
+// NewBoltDatastore opens a bolt db with the given pathname. 
+//
+// If, noSync is set, file system sync safety is disabled for performance.  This should generally only be used 
+// if the db can be easily regenerated or can be thrown away (e.g. a cache db) -- SET WITH CAUTION.
 func NewBoltDatastore(path, bucket string, noSync bool) (*BoltDatastore, error) {
-	db, err := bolt.Open(path+"/bolt.db", 0600, nil)
+	pathname := path + "/bolt.db"
+
+	db, err := bolt.Open(pathname, 0600, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +42,7 @@ func NewBoltDatastore(path, bucket string, noSync bool) (*BoltDatastore, error) 
 	return &BoltDatastore{
 		db:         db,
 		bucketName: []byte(bucket),
-		Path:       path + "/bolt.db",
+		Path:       pathname,
 	}, nil
 }
 
@@ -130,15 +138,22 @@ func (bd *BoltDatastore) Query(q query.Query) (query.Results, error) {
 			if qrb.Query.Prefix != "" {
 				prefix = []byte(qrb.Query.Prefix)
 			}
+			seekPrefix := []byte(qrb.Query.SeekPrefix)
+			if len(seekPrefix) == 0 {
+				seekPrefix = prefix
+			}
 
 			cur := 0
 			sent := 0
-			for k, v := c.Seek(prefix); k != nil; k, v = c.Next() {
+			for k, v := c.Seek(seekPrefix); k != nil; k, v = c.Next() {
 				if cur < qrb.Query.Offset {
 					cur++
 					continue
 				}
 				if qrb.Query.Limit > 0 && sent >= qrb.Query.Limit {
+					break
+				}
+				if !bytes.HasPrefix(k, prefix) {
 					break
 				}
 				dk := ds.NewKey(string(k)).String()
