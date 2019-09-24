@@ -174,9 +174,8 @@ func (bd *BoltDatastore) Query(q query.Query) (query.Results, error) {
 	for _, f := range q.Filters {
 		qr = query.NaiveFilter(qr, f)
 	}
-	for _, o := range q.Orders {
-		qr = query.NaiveOrder(qr, o)
-	}
+
+	qr = query.NaiveOrder(qr, q.Orders...)
 	return qr, nil
 }
 
