@@ -4,17 +4,38 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	ds "github.com/ipfs/go-datastore"
+	dstest "github.com/ipfs/go-datastore/test"
 )
 
-func TestBasicPutGet(t *testing.T) {
+func TestSuite(t *testing.T) {
 	path, err := ioutil.TempDir("/tmp", "boltdbtest")
-	db, err := NewBoltDatastore(path, "test")
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.RemoveAll(path)
+	db, err := NewBoltDatastore(path, "test", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	dstest.SubtestAll(t, db)
+}
+
+func TestBasicPutGet(t *testing.T) {
+	path, err := ioutil.TempDir("/tmp", "boltdbtest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(path)
+	db, err := NewBoltDatastore(path, "test", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
 
 	dsk := ds.NewKey("test")
 	somedata := []byte("some data in the datastore")
@@ -24,14 +45,9 @@ func TestBasicPutGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	val, err := db.Get(dsk)
+	b, err := db.Get(dsk)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	b, ok := val.([]byte)
-	if !ok {
-		t.Fatal("Got back invalid typed data")
 	}
 
 	if !bytes.Equal(b, somedata) {
@@ -47,10 +63,15 @@ func TestBasicPutGet(t *testing.T) {
 func BenchmarkPut(b *testing.B) {
 	b.StopTimer()
 	path, err := ioutil.TempDir("/tmp", "boltdbtest")
-	db, err := NewBoltDatastore(path, "test")
 	if err != nil {
 		b.Fatal(err)
 	}
+	defer os.RemoveAll(path)
+	db, err := NewBoltDatastore(path, "test", false)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.Close()
 
 	values := make(map[string][]byte)
 	for i := 0; i < b.N; i++ {
@@ -67,15 +88,21 @@ func BenchmarkPut(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+	b.StopTimer()
 }
 
 func BenchmarkPutMany(b *testing.B) {
 	b.StopTimer()
 	path, err := ioutil.TempDir("/tmp", "boltdbtest")
-	db, err := NewBoltDatastore(path, "test")
 	if err != nil {
 		b.Fatal(err)
 	}
+	defer os.RemoveAll(path)
+	db, err := NewBoltDatastore(path, "test", false)
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer db.Close()
 
 	values := make(map[string][]byte)
 	for i := 0; i < b.N; i++ {
@@ -93,4 +120,5 @@ func BenchmarkPutMany(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	b.StopTimer()
 }
