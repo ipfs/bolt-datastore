@@ -87,8 +87,12 @@ func (bd *BoltDatastore) Has(key ds.Key) (bool, error) {
 }
 
 func (bd *BoltDatastore) GetSize(key ds.Key) (size int, err error) {
+	size = -1
 	err = bd.db.View(func(tx *bolt.Tx) error {
 		val := tx.Bucket(bd.bucketName).Get(key.Bytes())
+		if val == nil {
+			return ds.ErrNotFound
+		}
 		size = len(val)
 		return nil
 	})
@@ -175,8 +179,6 @@ func (bd *BoltDatastore) Query(q query.Query) (query.Results, error) {
 	}
 	return qr, nil
 }
-
-func (bd *BoltDatastore) IsThreadSafe() {}
 
 type boltBatch struct {
 	tx  *bolt.Tx
