@@ -90,35 +90,3 @@ func BenchmarkPut(b *testing.B) {
 	}
 	b.StopTimer()
 }
-
-func BenchmarkPutMany(b *testing.B) {
-	b.StopTimer()
-	path, err := ioutil.TempDir("/tmp", "boltdbtest")
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer os.RemoveAll(path)
-	db, err := NewBoltDatastore(path, "test", false)
-	if err != nil {
-		b.Fatal(err)
-	}
-	defer db.Close()
-
-	values := make(map[string][]byte)
-	for i := 0; i < b.N; i++ {
-		values[fmt.Sprint(i)] = []byte(fmt.Sprintf("value number %d", i))
-	}
-
-	b.StartTimer()
-
-	data := make(map[ds.Key]interface{})
-	for k, v := range values {
-		dsk := ds.NewKey(k)
-		data[dsk] = v
-	}
-	err = db.PutMany(data)
-	if err != nil {
-		b.Fatal(err)
-	}
-	b.StopTimer()
-}

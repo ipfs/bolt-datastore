@@ -8,7 +8,7 @@ import (
 )
 
 // BoltDatastore implements ds.Datastore
-// TODO: use buckets to represent the heirarchy of the ds.Keys
+// TODO: use buckets to represent the hierarchy of the ds.Keys
 type BoltDatastore struct {
 	db         *bolt.DB
 	bucketName []byte
@@ -102,23 +102,6 @@ func (bd *BoltDatastore) GetSize(key ds.Key) (size int, err error) {
 func (bd *BoltDatastore) Put(key ds.Key, val []byte) error {
 	return bd.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(bd.bucketName).Put(key.Bytes(), val)
-	})
-}
-
-func (bd *BoltDatastore) PutMany(data map[ds.Key]interface{}) error {
-	return bd.db.Update(func(tx *bolt.Tx) error {
-		buck := tx.Bucket(bd.bucketName)
-		for k, v := range data {
-			bval, ok := v.([]byte)
-			if !ok {
-				return ds.ErrInvalidType
-			}
-			err := buck.Put(k.Bytes(), bval)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
 	})
 }
 
