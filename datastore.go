@@ -1,10 +1,10 @@
 package boltds
 
 import (
-	bolt "github.com/boltdb/bolt"
 	ds "github.com/ipfs/go-datastore"
 	query "github.com/ipfs/go-datastore/query"
 	"github.com/jbenet/goprocess"
+	bolt "go.etcd.io/bbolt"
 )
 
 // BoltDatastore implements ds.Datastore
